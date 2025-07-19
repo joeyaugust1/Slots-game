@@ -28,14 +28,12 @@
       left: 52px;
       top: 260px;
       width: 395px;
-      height: 215px;
+      height: 287px; /* Increased for 4 rows */
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 1fr);
       gap: 0;
       z-index: 2;
-      /* Remove background for production */
-      /* background: rgba(255,255,255,0.03); */
       pointer-events: none;
     }
     .sprite {
@@ -45,8 +43,6 @@
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      /* For dev: outline the sprite positions. Remove in production. */
-      /* outline: 1px dashed #0c0; */
     }
     .sprite img {
       max-width: 100%;
@@ -105,15 +101,18 @@
   <div class="slots-bg">
     <!-- Reel grid overlay with sprites -->
     <div class="reels-area" id="reelsArea">
-      <div class="sprite"><img src="assets/row-1-column-1.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-1-column-2.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-1-column-3.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-1.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-2.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-3.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-1.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-2.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-3.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-1-column-1 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-1-column-2 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-1-column-3 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-1 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-2 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-3 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-1 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-2 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-3 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-4-column-1 (1).png" alt=""></div>
+      <div class="sprite"><img src="assets/row-4-column-2.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-4-column-3.png" alt=""></div>
     </div>
     <!-- Overlay for controls (bottom of cabinet) -->
     <div class="bottom-ui">
