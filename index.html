@@ -23,18 +23,32 @@
       margin-top: 40px;
     }
     .reels-area {
-      /* Adjust these to fit the transparent reel area */
       position: absolute;
       left: 52px;
       top: 260px;
       width: 395px;
-      height: 287px; /* Increased for 4 rows */
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 0;
+      height: 215px;
+      display: flex;
+      justify-content: space-between;
       z-index: 2;
       pointer-events: none;
+    }
+    .reel-column {
+      width: 120px;
+      height: 215px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: none;
+    }
+    .reel-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 120px;
+      transition: top 0.25s cubic-bezier(.22,1.5,.6,1);
     }
     .sprite {
       width: 120px;
@@ -49,6 +63,7 @@
       max-height: 100%;
       display: block;
       image-rendering: pixelated;
+      pointer-events: none;
     }
     .bottom-ui {
       position: absolute;
@@ -99,20 +114,17 @@
 </head>
 <body>
   <div class="slots-bg">
-    <!-- Reel grid overlay with sprites -->
+    <!-- Reels overlay area -->
     <div class="reels-area" id="reelsArea">
-      <div class="sprite"><img src="assets/row-1-column-1 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-1-column-2 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-1-column-3 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-1 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-2 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-2-column-3 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-1 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-2 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-3-column-3 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-4-column-1 (1).png" alt=""></div>
-      <div class="sprite"><img src="assets/row-4-column-2.png" alt=""></div>
-      <div class="sprite"><img src="assets/row-4-column-3.png" alt=""></div>
+      <div class="reel-column" id="reel0">
+        <div class="reel-strip"></div>
+      </div>
+      <div class="reel-column" id="reel1">
+        <div class="reel-strip"></div>
+      </div>
+      <div class="reel-column" id="reel2">
+        <div class="reel-strip"></div>
+      </div>
     </div>
     <!-- Overlay for controls (bottom of cabinet) -->
     <div class="bottom-ui">
@@ -121,12 +133,117 @@
     </div>
   </div>
   <script>
-    // Demo: basic spin button disables briefly (no reel logic yet)
-    const spinBtn = document.getElementById('spinBtn');
-    spinBtn.onclick = function() {
-      spinBtn.disabled = true;
-      setTimeout(() => spinBtn.disabled = false, 900);
+    // All sprite image paths in assets folder (including (1) variations and up to row 4)
+    const spritePaths = [
+      "assets/row-1-column-1.png",
+      "assets/row-1-column-1 (1).png",
+      "assets/row-1-column-2.png",
+      "assets/row-1-column-2 (1).png",
+      "assets/row-1-column-3.png",
+      "assets/row-1-column-3 (1).png",
+      "assets/row-2-column-1.png",
+      "assets/row-2-column-1 (1).png",
+      "assets/row-2-column-2.png",
+      "assets/row-2-column-2 (1).png",
+      "assets/row-2-column-3.png",
+      "assets/row-2-column-3 (1).png",
+      "assets/row-3-column-1.png",
+      "assets/row-3-column-1 (1).png",
+      "assets/row-3-column-2.png",
+      "assets/row-3-column-2 (1).png",
+      "assets/row-3-column-3.png",
+      "assets/row-3-column-3 (1).png",
+      "assets/row-4-column-1 (1).png",
+      "assets/row-4-column-2.png",
+      "assets/row-4-column-3.png"
+    ].filter((p, i, arr) => arr.indexOf(p) === i); // remove accidental duplicates
+
+    // For a 3x3 visible area
+    const visibleRows = 3;
+    const totalSprites = spritePaths.length;
+    const reelsCount = 3;
+
+    // Each reel will be filled with all sprites (repeat for looping)
+    function getFullReelStrip(finalIdx) {
+      let strip = [];
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < totalSprites; j++) {
+          strip.push(spritePaths[j]);
+        }
+      }
+      // End with finalIdx as the top visible symbol
+      for (let i = 0; i < visibleRows; i++) {
+        strip.push(spritePaths[(finalIdx + i) % totalSprites]);
+      }
+      return strip;
     }
+
+    // Setup: initialize each reel with the top 3 symbols
+    for (let reel = 0; reel < reelsCount; reel++) {
+      const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+      let html = '';
+      for (let row = 0; row < visibleRows; row++) {
+        html += `<div class="sprite"><img src="${spritePaths[(reel + row*3)%totalSprites]}" alt=""></div>`;
+      }
+      stripDiv.innerHTML = html;
+      stripDiv.style.top = "0px";
+    }
+
+    // Spinning animation
+    function spinReel(reelIdx, finalSpriteIdx, duration = 1400, delay = 0) {
+      return new Promise(resolve => {
+        const stripDiv = document.querySelector(`#reel${reelIdx} .reel-strip`);
+        const stripSprites = getFullReelStrip(finalSpriteIdx);
+        let html = '';
+        for (let i = 0; i < stripSprites.length; i++) {
+          html += `<div class="sprite"><img src="${stripSprites[i]}" alt=""></div>`;
+        }
+        stripDiv.innerHTML = html;
+
+        const spriteHeight = 72;
+        const steps = stripSprites.length - visibleRows;
+        const finalTop = -steps * spriteHeight;
+
+        stripDiv.style.transition = "none";
+        stripDiv.style.top = "0px";
+        setTimeout(() => {
+          stripDiv.style.transition = `top ${duration}ms cubic-bezier(.17,.67,.83,.67)`;
+          stripDiv.style.top = finalTop + "px";
+        }, delay);
+
+        setTimeout(() => {
+          let html = '';
+          for (let row = 0; row < visibleRows; row++) {
+            const idx = (finalSpriteIdx + row) % totalSprites;
+            html += `<div class="sprite"><img src="${spritePaths[idx]}" alt=""></div>`;
+          }
+          stripDiv.innerHTML = html;
+          stripDiv.style.transition = "none";
+          stripDiv.style.top = "0px";
+          resolve(finalSpriteIdx);
+        }, duration + delay);
+      });
+    }
+
+    // SPIN button logic
+    const spinBtn = document.getElementById('spinBtn');
+    spinBtn.onclick = async function() {
+      spinBtn.disabled = true;
+      // Pick a random landing sprite (top one) for each reel
+      const finalIndices = [];
+      for (let i = 0; i < reelsCount; i++) {
+        finalIndices.push(Math.floor(Math.random() * totalSprites));
+      }
+      // Animate each reel with staggered start
+      await Promise.all([
+        spinReel(0, finalIndices[0], 1200, 0),
+        spinReel(1, finalIndices[1], 1450, 120),
+        spinReel(2, finalIndices[2], 1700, 240)
+      ]);
+      spinBtn.disabled = false;
+    };
+
+    document.getElementById('balance').textContent = "Balance: $10.00";
   </script>
 </body>
 </html>
