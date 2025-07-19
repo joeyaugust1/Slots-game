@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Slots Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding-top: 50px;
+    }
+    .slot-machine {
+      margin: 0 auto;
+      background: #444;
+      padding: 30px 20px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .reels {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .reel {
+      background: #222;
+      border: 2px solid #888;
+      border-radius: 10px;
+      width: 60px;
+      height: 60px;
+      font-size: 2.5rem;
+      line-height: 60px;
+      margin: 0 10px;
+      box-shadow: 2px 2px 8px #111 inset;
+      transition: background 0.2s;
+    }
+    .balance {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .message {
+      min-height: 24px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    button {
+      padding: 10px 25px;
+      font-size: 1rem;
+      background: #ee1;
+      color: #222;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="slot-machine">
+    <div class="balance" id="balance">Balance: $100</div>
+    <div class="reels">
+      <div class="reel" id="reel1">🍒</div>
+      <div class="reel" id="reel2">🍋</div>
+      <div class="reel" id="reel3">🔔</div>
+    </div>
+    <div class="message" id="message"></div>
+    <button id="spinBtn">Spin ($10)</button>
+  </div>
 
+  <script>
+    const symbols = ["🍒", "🍋", "🔔", "🍀", "7️⃣"];
+    let balance = 100;
+    const bet = 10;
+
+    const balanceElem = document.getElementById('balance');
+    const messageElem = document.getElementById('message');
+    const spinBtn = document.getElementById('spinBtn');
+    const reels = [
+      document.getElementById('reel1'),
+      document.getElementById('reel2'),
+      document.getElementById('reel3')
+    ];
+
+    function spinReels() {
+      return [
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)]
+      ];
+    }
+
+    function checkWin(spin) {
+      return spin[0] === spin[1] && spin[1] === spin[2];
+    }
+
+    function updateBalance() {
+      balanceElem.textContent = `Balance: $${balance}`;
+    }
+
+    function showMessage(msg, win) {
+      messageElem.textContent = msg;
+      messageElem.style.color = win ? "#ff0" : "#fff";
+    }
+
+    spinBtn.onclick = function() {
+      if (balance < bet) return;
+      balance -= bet;
+      updateBalance();
+      const spin = spinReels();
+      for(let i=0; i<3; i++) reels[i].textContent = spin[i];
+      if (checkWin(spin)) {
+        balance += 50;
+        updateBalance();
+        showMessage("JACKPOT! You win $50!", true);
+      } else {
+        showMessage("Try again!", false);
+      }
+      if (balance < bet) {
+        spinBtn.disabled = true;
+        showMessage("Game over! Out of funds.", false);
+      }
+    }
+
+    updateBalance();
+    showMessage("Good luck!", false);
+  </script>
+</body>
+</html>
