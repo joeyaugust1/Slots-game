@@ -2,134 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simple Slots Game</title>
+  <title>CannaBus Slots Game</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #222;
-      color: #fff;
-      text-align: center;
-      padding-top: 50px;
-    }
-    .slot-machine {
-      margin: 0 auto;
-      background: #444;
-      padding: 30px 20px;
-      border-radius: 10px;
-      display: inline-block;
-    }
-    .reels {
+      background: #181f11;
+      min-height: 100vh;
+      margin: 0;
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
+      align-items: flex-start;
+      font-family: 'Segoe UI', Arial, sans-serif;
     }
-    .reel {
-      background: #222;
-      border: 2px solid #888;
-      border-radius: 10px;
-      width: 60px;
-      height: 60px;
-      font-size: 2.5rem;
-      line-height: 60px;
-      margin: 0 10px;
-      box-shadow: 2px 2px 8px #111 inset;
-      transition: background 0.2s;
+    .slots-bg {
+      position: relative;
+      width: 500px;
+      height: 750px;
+      background: url('assets/file_0000000046b0622f8246d2c2294dc6f8.png') no-repeat center center;
+      background-size: contain;
+      box-shadow: 0 6px 40px #011a, 0 1px 15px #000a inset;
+      margin-top: 40px;
     }
-    .balance {
-      font-size: 1.2rem;
-      margin-bottom: 10px;
+    .reels-area {
+      /* Adjust these to fit the transparent reel area */
+      position: absolute;
+      left: 52px;
+      top: 260px;
+      width: 395px;
+      height: 215px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 0;
+      z-index: 2;
+      /* Remove background for production */
+      /* background: rgba(255,255,255,0.03); */
+      pointer-events: none;
     }
-    .message {
-      min-height: 24px;
-      margin-bottom: 10px;
-      font-weight: bold;
+    .sprite {
+      width: 120px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      /* For dev: outline the sprite positions. Remove in production. */
+      /* outline: 1px dashed #0c0; */
     }
-    button {
-      padding: 10px 25px;
-      font-size: 1rem;
-      background: #ee1;
+    .sprite img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+    .bottom-ui {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 42px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      z-index: 3;
+      pointer-events: auto;
+    }
+    .spin-btn {
+      padding: 11px 35px;
+      font-size: 1.25rem;
+      background: linear-gradient(180deg, #ffed6b 60%, #ffbb32 100%);
       color: #222;
       border: none;
-      border-radius: 5px;
+      border-radius: 16px;
       cursor: pointer;
       font-weight: bold;
-      margin-top: 10px;
+      box-shadow: 0 2px 4px #0006, 0 1px 2px #fff7 inset;
+      border: 2.5px solid #947d37;
+      letter-spacing: 1.2px;
       transition: background 0.2s;
     }
-    button:disabled {
-      background: #999;
+    .spin-btn:active {
+      background: #ffe857;
+    }
+    .spin-btn:disabled {
+      background: #aaa;
+      color: #888;
       cursor: not-allowed;
+      border-color: #888;
+    }
+    .balance-ui {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #233711d9;
+      color: #fff;
+      border: 1.5px solid #f9e46c77;
+      font-weight: bold;
+      font-size: 1.1rem;
+      min-width: 110px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="slot-machine">
-    <div class="balance" id="balance">Balance: $100</div>
-    <div class="reels">
-      <div class="reel" id="reel1">🍒</div>
-      <div class="reel" id="reel2">🍋</div>
-      <div class="reel" id="reel3">🔔</div>
+  <div class="slots-bg">
+    <!-- Reel grid overlay with sprites -->
+    <div class="reels-area" id="reelsArea">
+      <div class="sprite"><img src="assets/row-1-column-1.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-1-column-2.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-1-column-3.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-1.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-2.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-2-column-3.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-1.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-2.png" alt=""></div>
+      <div class="sprite"><img src="assets/row-3-column-3.png" alt=""></div>
     </div>
-    <div class="message" id="message"></div>
-    <button id="spinBtn">Spin ($10)</button>
+    <!-- Overlay for controls (bottom of cabinet) -->
+    <div class="bottom-ui">
+      <div class="balance-ui" id="balance">Balance: $10.00</div>
+      <button class="spin-btn" id="spinBtn">SPIN</button>
+    </div>
   </div>
-
   <script>
-    const symbols = ["🍒", "🍋", "🔔", "🍀", "7️⃣"];
-    let balance = 100;
-    const bet = 10;
-
-    const balanceElem = document.getElementById('balance');
-    const messageElem = document.getElementById('message');
+    // Demo: basic spin button disables briefly (no reel logic yet)
     const spinBtn = document.getElementById('spinBtn');
-    const reels = [
-      document.getElementById('reel1'),
-      document.getElementById('reel2'),
-      document.getElementById('reel3')
-    ];
-
-    function spinReels() {
-      return [
-        symbols[Math.floor(Math.random() * symbols.length)],
-        symbols[Math.floor(Math.random() * symbols.length)],
-        symbols[Math.floor(Math.random() * symbols.length)]
-      ];
-    }
-
-    function checkWin(spin) {
-      return spin[0] === spin[1] && spin[1] === spin[2];
-    }
-
-    function updateBalance() {
-      balanceElem.textContent = `Balance: $${balance}`;
-    }
-
-    function showMessage(msg, win) {
-      messageElem.textContent = msg;
-      messageElem.style.color = win ? "#ff0" : "#fff";
-    }
-
     spinBtn.onclick = function() {
-      if (balance < bet) return;
-      balance -= bet;
-      updateBalance();
-      const spin = spinReels();
-      for(let i=0; i<3; i++) reels[i].textContent = spin[i];
-      if (checkWin(spin)) {
-        balance += 50;
-        updateBalance();
-        showMessage("JACKPOT! You win $50!", true);
-      } else {
-        showMessage("Try again!", false);
-      }
-      if (balance < bet) {
-        spinBtn.disabled = true;
-        showMessage("Game over! Out of funds.", false);
-      }
+      spinBtn.disabled = true;
+      setTimeout(() => spinBtn.disabled = false, 900);
     }
-
-    updateBalance();
-    showMessage("Good luck!", false);
   </script>
 </body>
 </html>
