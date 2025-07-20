@@ -165,159 +165,38 @@
     </div>
   </div>
   <script>
-    // Sprite image paths
-    const spritePaths = [
-      "assets/row-1-column-1.png",
-      "assets/row-1-column-1 (1).png",
-      "assets/row-1-column-2.png",
-      "assets/row-1-column-2 (1).png",
-      "assets/row-1-column-3.png",
-      "assets/row-1-column-3 (1).png",
-      "assets/row-2-column-1.png",
-      "assets/row-2-column-1 (1).png",
-      "assets/row-2-column-2.png",
-      "assets/row-2-column-2 (1).png",
-      "assets/row-2-column-3.png",
-      "assets/row-2-column-3 (1).png",
-      "assets/row-3-column-1.png",
-      "assets/row-3-column-1 (1).png",
-      "assets/row-3-column-2.png",
-      "assets/row-3-column-2 (1).png",
-      "assets/row-3-column-3.png",
-      "assets/row-3-column-3 (1).png",
-      "assets/row-4-column-1 (1).png",
-      "assets/row-4-column-2.png",
-      "assets/row-4-column-3.png"
-    ].filter((p, i, arr) => arr.indexOf(p) === i); // remove accidental duplicates
+    // --- SYMBOLS AND REELS SETUP ---
+    // Symbols, each with an image and a payout for 3-in-a-row
+    const symbols = [
+      { name: "one",     img: "assets/row-1-column-1.png", payout: 10 },
+      { name: "ghost",   img: "assets/row-2-column-1.png", payout: 5 },
+      { name: "two",     img: "assets/row-3-column-1.png", payout: 2 },
+      { name: "club",    img: "assets/row-1-column-2.png", payout: 1 },
+      { name: "diamond", img: "assets/row-2-column-2.png", payout: 1 },
+      { name: "spade",   img: "assets/row-3-column-2.png", payout: 1 }
+    ];
+
+    // Reel strips: Each array is a reel, each value is a symbol index.
+    // Repeat symbols to adjust frequency/probability (affects RTP).
+    const reels = [
+      [0, 1, 2, 3, 4, 5, 0, 3, 1, 4, 2, 5], // Reel 1
+      [2, 3, 4, 5, 0, 1, 5, 4, 2, 0, 3, 1], // Reel 2
+      [1, 2, 3, 4, 5, 0, 3, 2, 4, 1, 5, 0]  // Reel 3
+    ];
 
     const visibleRows = 3;
-    const totalSprites = spritePaths.length;
     const reelsCount = 3;
 
+    // --- UI SETUP ---
     // Populate bet options
     const betSelect = document.getElementById('betAmount');
     const betSteps = 10;
-    let betValues = [];
     for (let i = 1; i <= betSteps; i++) {
       let v = (i * 0.2).toFixed(2);
       betSelect.innerHTML += `<option value="${v}">$${v}</option>`;
-      betValues.push(parseFloat(v));
     }
 
-    // Win tables and odds for each bet
-    const payoutTables = {
-      "0.20": [
-        { tier: "jackpot", payout: 10.00, chance: 0.005 },
-        { tier: "medium",  payout: 1.00,  chance: 0.04 },
-        { tier: "low",     payout: 0.40,  chance: 0.20 }
-      ],
-      "0.40": [
-        { tier: "jackpot", payout: 20.00, chance: 0.007 },
-        { tier: "medium",  payout: 2.00,  chance: 0.05 },
-        { tier: "low",     payout: 0.80,  chance: 0.19 }
-      ],
-      "0.60": [
-        { tier: "jackpot", payout: 30.00, chance: 0.008 },
-        { tier: "medium",  payout: 3.00,  chance: 0.055 },
-        { tier: "low",     payout: 1.20,  chance: 0.18 }
-      ],
-      "0.80": [
-        { tier: "jackpot", payout: 40.00, chance: 0.010 },
-        { tier: "medium",  payout: 4.00,  chance: 0.06 },
-        { tier: "low",     payout: 1.60,  chance: 0.17 }
-      ],
-      "1.00": [
-        { tier: "jackpot", payout: 50.00, chance: 0.012 },
-        { tier: "medium",  payout: 5.00,  chance: 0.07 },
-        { tier: "low",     payout: 2.00,  chance: 0.16 }
-      ],
-      "1.20": [
-        { tier: "jackpot", payout: 60.00, chance: 0.013 },
-        { tier: "medium",  payout: 6.00,  chance: 0.08 },
-        { tier: "low",     payout: 2.40,  chance: 0.15 }
-      ],
-      "1.40": [
-        { tier: "jackpot", payout: 70.00, chance: 0.014 },
-        { tier: "medium",  payout: 7.00,  chance: 0.09 },
-        { tier: "low",     payout: 2.80,  chance: 0.15 }
-      ],
-      "1.60": [
-        { tier: "jackpot", payout: 80.00, chance: 0.015 },
-        { tier: "medium",  payout: 8.00,  chance: 0.10 },
-        { tier: "low",     payout: 3.20,  chance: 0.15 }
-      ],
-      "1.80": [
-        { tier: "jackpot", payout: 90.00, chance: 0.017 },
-        { tier: "medium",  payout: 9.00,  chance: 0.11 },
-        { tier: "low",     payout: 3.60,  chance: 0.15 }
-      ],
-      "2.00": [
-        { tier: "jackpot", payout: 100.00, chance: 0.02 },
-        { tier: "medium",  payout: 10.00,  chance: 0.12 },
-        { tier: "low",     payout: 4.00,  chance: 0.15 }
-      ]
-    };
-
-    // Setup: initialize each reel with the top 3 symbols
-    for (let reel = 0; reel < reelsCount; reel++) {
-      const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
-      let html = '';
-      for (let row = 0; row < visibleRows; row++) {
-        html += `<div class="sprite"><img src="${spritePaths[(reel + row*3)%totalSprites]}" alt=""></div>`;
-      }
-      stripDiv.innerHTML = html;
-      stripDiv.style.top = "0px";
-    }
-
-    function getFullReelStrip(finalIdx) {
-      let strip = [];
-      for (let i = 0; i < 2; i++) {
-        for (let j = 0; j < totalSprites; j++) {
-          strip.push(spritePaths[j]);
-        }
-      }
-      for (let i = 0; i < visibleRows; i++) {
-        strip.push(spritePaths[(finalIdx + i) % totalSprites]);
-      }
-      return strip;
-    }
-
-    function spinReel(reelIdx, finalSpriteIdx, duration = 1400, delay = 0) {
-      return new Promise(resolve => {
-        const stripDiv = document.querySelector(`#reel${reelIdx} .reel-strip`);
-        const stripSprites = getFullReelStrip(finalSpriteIdx);
-        let html = '';
-        for (let i = 0; i < stripSprites.length; i++) {
-          html += `<div class="sprite"><img src="${stripSprites[i]}" alt=""></div>`;
-        }
-        stripDiv.innerHTML = html;
-
-        const spriteHeight = 72;
-        const steps = stripSprites.length - visibleRows;
-        const finalTop = -steps * spriteHeight;
-
-        stripDiv.style.transition = "none";
-        stripDiv.style.top = "0px";
-        setTimeout(() => {
-          stripDiv.style.transition = `top ${duration}ms cubic-bezier(.17,.67,.83,.67)`;
-          stripDiv.style.top = finalTop + "px";
-        }, delay);
-
-        setTimeout(() => {
-          let html = '';
-          for (let row = 0; row < visibleRows; row++) {
-            const idx = (finalSpriteIdx + row) % totalSprites;
-            html += `<div class="sprite"><img src="${spritePaths[idx]}" alt=""></div>`;
-          }
-          stripDiv.innerHTML = html;
-          stripDiv.style.transition = "none";
-          stripDiv.style.top = "0px";
-          resolve(finalSpriteIdx);
-        }, duration + delay);
-      });
-    }
-
-    // Balance logic
+    // --- BALANCE AND WIN MESSAGE FUNCTIONS ---
     let balance = 10.00;
     function setBalance(val) {
       balance = Math.round(val * 100) / 100;
@@ -325,7 +204,6 @@
     }
     setBalance(balance);
 
-    // Win message logic
     const winMsgEl = document.getElementById("winMsg");
     function showWinMsg(msg) {
       winMsgEl.textContent = msg;
@@ -333,22 +211,111 @@
       setTimeout(() => winMsgEl.classList.remove("show"), 2500);
     }
 
-    // Random draw for payout tier
-    function getWinTier(bet) {
-      const payouts = payoutTables[bet.toFixed(2)];
-      let roll = Math.random();
-      let sum = 0;
-      for (const tier of payouts) {
-        sum += tier.chance;
-        if (roll < sum) return tier; // jackpot, medium, or low
-      }
-      return null; // lose
+    // --- SLOT MECHANICS LOGIC ---
+
+    // Get N random consecutive symbol indices for a reel, simulating the visible window
+    function getVisibleSymbols(reelIdx, stopIndex) {
+      const strip = reels[reelIdx];
+      return Array.from({length: visibleRows}, (_, i) =>
+        strip[(stopIndex + i) % strip.length]
+      );
     }
 
-    // Spin button logic
+    // For a spinning effect, create a long strip and animate to the final symbols
+    function spinReel(reelIdx, stopIndex, duration = 1400, delay = 0) {
+      return new Promise(resolve => {
+        const stripDiv = document.querySelector(`#reel${reelIdx} .reel-strip`);
+        // Build long strip for animation
+        const strip = [];
+        // Two full cycles for effect
+        for (let i = 0; i < 2; i++) {
+          for (let j = 0; j < reels[reelIdx].length; j++) {
+            strip.push(reels[reelIdx][j]);
+          }
+        }
+        // Add final visible symbols
+        for (let i = 0; i < visibleRows; i++) {
+          strip.push(reels[reelIdx][(stopIndex + i) % reels[reelIdx].length]);
+        }
+
+        let html = '';
+        for (let i = 0; i < strip.length; i++) {
+          html += `<div class="sprite"><img src="${symbols[strip[i]].img}" alt=""></div>`;
+        }
+        stripDiv.innerHTML = html;
+
+        const spriteHeight = 72;
+        const steps = strip.length - visibleRows;
+        const finalTop = -steps * spriteHeight;
+
+        stripDiv.style.transition = "none";
+        stripDiv.style.top = "0px";
+
+        setTimeout(() => {
+          stripDiv.style.transition = `top ${duration}ms cubic-bezier(.17,.67,.83,.67)`;
+          stripDiv.style.top = finalTop + "px";
+        }, delay);
+
+        setTimeout(() => {
+          // Show just the final 3 symbols
+          let html = '';
+          for (let row = 0; row < visibleRows; row++) {
+            const idx = (stopIndex + row) % reels[reelIdx].length;
+            html += `<div class="sprite"><img src="${symbols[reels[reelIdx][idx]].img}" alt=""></div>`;
+          }
+          stripDiv.innerHTML = html;
+          stripDiv.style.transition = "none";
+          stripDiv.style.top = "0px";
+          resolve();
+        }, duration + delay);
+      });
+    }
+
+    // Show a grid instantly (e.g. on load)
+    function showGrid(grid) {
+      for (let reel = 0; reel < reelsCount; reel++) {
+        const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+        let html = '';
+        for (let row = 0; row < visibleRows; row++) {
+          html += `<div class="sprite"><img src="${symbols[grid[reel][row]].img}" alt=""></div>`;
+        }
+        stripDiv.innerHTML = html;
+        stripDiv.style.top = "0px";
+        stripDiv.style.transition = "none";
+      }
+    }
+
+    // Generate a random 3x3 grid of symbol indices (per reel, per row)
+    function getRandomGrid() {
+      let grid = [];
+      for (let reel = 0; reel < reelsCount; reel++) {
+        let col = [];
+        // Random stop position for this reel
+        let stopIdx = Math.floor(Math.random() * reels[reel].length);
+        for (let row = 0; row < visibleRows; row++) {
+          col.push(reels[reel][(stopIdx + row) % reels[reel].length]);
+        }
+        grid.push(col);
+      }
+      return grid;
+    }
+
+    // Evaluate payout for the grid and bet
+    function evaluatePayout(grid, bet) {
+      let totalWin = 0;
+      for (let row = 0; row < visibleRows; row++) {
+        const s0 = grid[0][row], s1 = grid[1][row], s2 = grid[2][row];
+        if (s0 === s1 && s1 === s2) {
+          totalWin += symbols[s0].payout * bet;
+        }
+      }
+      // Optionally, add diagonal/vertical checks here
+      return totalWin;
+    }
+
+    // --- SPIN BUTTON LOGIC ---
     const spinBtn = document.getElementById('spinBtn');
     spinBtn.onclick = async function() {
-      // Get bet
       const bet = parseFloat(betSelect.value);
       if (balance < bet) {
         showWinMsg("Insufficient balance!");
@@ -358,26 +325,33 @@
       spinBtn.disabled = true;
       betSelect.disabled = true;
 
-      // Pick a random landing sprite (top one) for each reel (demo: not tied to payout)
-      const finalIndices = [];
-      for (let i = 0; i < reelsCount; i++) {
-        finalIndices.push(Math.floor(Math.random() * totalSprites));
+      // For each reel, pick a random stop index
+      const stopIndices = [];
+      for (let reel = 0; reel < reelsCount; reel++) {
+        stopIndices.push(Math.floor(Math.random() * reels[reel].length));
       }
+
+      // Spin reels in parallel, staggered
       await Promise.all([
-        spinReel(0, finalIndices[0], 1200, 0),
-        spinReel(1, finalIndices[1], 1450, 120),
-        spinReel(2, finalIndices[2], 1700, 240)
+        spinReel(0, stopIndices[0], 1200, 0),
+        spinReel(1, stopIndices[1], 1450, 120),
+        spinReel(2, stopIndices[2], 1700, 240)
       ]);
 
-      // Determine win
-      const tier = getWinTier(bet);
-      if (tier) {
-        setBalance(balance + tier.payout);
-        let msg = "";
-        if (tier.tier === "jackpot") msg = `JACKPOT! You won $${tier.payout.toFixed(2)}!`;
-        else if (tier.tier === "medium") msg = `Big Win! You won $${tier.payout.toFixed(2)}!`;
-        else msg = `You won $${tier.payout.toFixed(2)}!`;
-        showWinMsg(msg);
+      // Build the grid from final stop positions
+      let grid = [];
+      for (let reel = 0; reel < reelsCount; reel++) {
+        grid[reel] = [];
+        for (let row = 0; row < visibleRows; row++) {
+          grid[reel][row] = reels[reel][(stopIndices[reel] + row) % reels[reel].length];
+        }
+      }
+
+      // Calculate win
+      const win = evaluatePayout(grid, bet);
+      if (win > 0) {
+        setBalance(balance + win);
+        showWinMsg(`You won $${win.toFixed(2)}!`);
       } else {
         showWinMsg("No win. Try again!");
       }
@@ -385,6 +359,9 @@
       spinBtn.disabled = false;
       betSelect.disabled = false;
     };
+
+    // On load, show random grid
+    showGrid(getRandomGrid());
   </script>
 </body>
 </html>
