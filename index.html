@@ -9,8 +9,9 @@
     .reels-area { position: absolute; left: 52px; top: 315px; width: 395px; height: 215px; display: flex; justify-content: space-between; z-index: 2; pointer-events: none; }
     .reel-column { width: 120px; height: 215px; overflow: hidden; position: relative; display: flex; flex-direction: column; align-items: center; background: none; }
     .reel-strip { position: absolute; top: 0; left: 0; width: 120px; transition: top 0.25s cubic-bezier(.22,1.5,.6,1); }
-    .sprite { width: 120px; height: 72px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .sprite { width: 120px; height: 72px; display: flex; align-items: center; justify-content: center; pointer-events: none; box-sizing: border-box; }
     .sprite img { max-width: 100%; max-height: 100%; display: block; image-rendering: pixelated; pointer-events: none; }
+    .sprite.gold-highlight { box-shadow: 0 0 12px 3px gold, 0 0 0 3px gold; border: 3px solid gold; border-radius: 12px; }
     .bottom-ui { position: absolute; left: 0; right: 0; bottom: 42px; display: flex; justify-content: center; gap: 20px; z-index: 3; pointer-events: auto; }
     .spin-btn { padding: 11px 35px; font-size: 1.25rem; background: linear-gradient(180deg, #ffed6b 60%, #ffbb32 100%); color: #222; border: none; border-radius: 16px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px #0006, 0 1px 2px #fff7 inset; border: 2.5px solid #947d37; letter-spacing: 1.2px; transition: background 0.2s; }
     .spin-btn:active { background: #ffe857; }
@@ -36,6 +37,8 @@
     .payout-table-row img { width: 48px; height: 48px; object-fit: contain; margin-right: 12px; border-radius: 6px; border: 1px solid #fff3; background: #181f11; }
     .payout-table-row .symbol-name { min-width: 110px; }
     .payout-table-row .symbol-payout { color: #ffed6b; font-weight: 600; margin-left: auto; }
+    /* SVG overlay styles */
+    .paylines-svg { pointer-events: none; position: absolute; left: 52px; top: 315px; width: 395px; height: 215px; z-index: 5; }
   </style>
 </head>
 <body>
@@ -46,6 +49,8 @@
       <div class="reel-column" id="reel1"><div class="reel-strip"></div></div>
       <div class="reel-column" id="reel2"><div class="reel-strip"></div></div>
     </div>
+    <!-- SVG Paylines Overlay -->
+    <svg class="paylines-svg" id="paylinesSVG" width="395" height="215"></svg>
     <div class="bottom-ui">
       <div class="balance-ui" id="balance">Balance: $10.00</div>
       <select class="bet-ui" id="betAmount"></select>
@@ -56,47 +61,27 @@
   <div class="payout-table" id="payoutTable"></div>
   <script>
     // === SYMBOLS DATA ===
-    //  payouts: [0, payoutFor2, payoutFor3], // payouts for 1, 2, or 3 in a line
-    //  chance: probability as decimal (e.g. 0.08 for 8%)
     const symbols = [
-      // Ace
       { name: 'file_0000', img: 'assets/file_000000001ee061f5906d24bc9c8508be - Edited_20250721_070851_0000.png', payouts: [0, 2, 4], chance: 0.08, display: "Ace" },
-      // King
       { name: 'd476a083', img: 'assets/d476a083-4634-460c-ba8d-d5fd1de22afb_20250721_070542_0000.png', payouts: [0, 1.5, 3], chance: 0.09, display: "King" },
-      // Queen
       { name: '124f55a4', img: 'assets/124f55a4-4e21-47e9-9197-46aec56c349f_20250721_071451_0000.png', payouts: [0, 2, 4], chance: 0.10, display: "Queen" },
-      // Hearts (special)
       { name: '057f11a8', img: 'assets/057f11a8-11e6-4e40-8d76-f298b56b34c2_20250721_070426_0000.png', payouts: [0, 2.5, 5], chance: 0.11, display: "Hearts" },
-      // Weed leaf
       { name: 'row-1-column-1', img: 'assets/row-1-column-1.png', payouts: [0, 4, 8], chance: 0.07, display: "Weed leaf" },
-      // Smoke cloud
       { name: 'row-1-column-2', img: 'assets/row-1-column-2.png', payouts: [0, 2, 4], chance: 0.08, display: "Smoke Clouds" },
-      // Joint
       { name: 'row-1-column-3', img: 'assets/row-1-column-3.png', payouts: [0, 3, 6], chance: 0.10, display: "Joint" },
-      // Thc juice
       { name: 'row-2-column-1', img: 'assets/row-2-column-1.png', payouts: [0, 3, 6], chance: 0.09, display: "Thc Juce" },
-      // Jar Of Weed
       { name: 'row-2-column-2', img: 'assets/row-2-column-2.png', payouts: [0, 3.5, 7], chance: 0.10, display: "Jar Of Weed" },
-      // Cookie
       { name: 'row-2-column-3', img: 'assets/row-2-column-3.png', payouts: [0, 3, 6], chance: 0.09, display: "Thc Cookie" },
-      // Brain High
       { name: 'row-3-column-1', img: 'assets/row-3-column-1.png', payouts: [0, 5, 10], chance: 0.08, display: "Brain High" },
-      // High frog
       { name: 'row-3-column-3', img: 'assets/row-3-column-3.png', payouts: [0, 2, 6], chance: 0.08, display: "High Frog" },
-      // Thc oil
       { name: 'row-3-column-2', img: 'assets/row-3-column-2.png', payouts: [0, 4, 8], chance: 0.08, display: "Thc Oil" },
-      // Clubs
       { name: 'row-4-column-1 (1)', img: 'assets/row-4-column-1 (1).png', payouts: [0, 2, 4], chance: 0.08, display: "Clubs" },
-      // Diamonds
       { name: 'row-4-column-2', img: 'assets/row-4-column-2.png', payouts: [0, 5, 10], chance: 0.08, display: "Diamonds" },
-      // Spades
       { name: 'row-4-column-3', img: 'assets/row-4-column-3.png', payouts: [0, 2, 4], chance: 0.09, display: "Spades" },
-      // Numbers 1-4 (1,2,3,4)
       { name: 'row-1-column-1 (1)', img: 'assets/row-1-column-1 (1).png', payouts: [0, 3, 6], chance: 0.06, display: "1" },
       { name: 'row-1-column-2 (1)', img: 'assets/row-1-column-2 (1).png', payouts: [0, 3, 6], chance: 0.06, display: "2" },
       { name: 'row-1-column-3 (1)', img: 'assets/row-1-column-3 (1).png', payouts: [0, 3, 6], chance: 0.06, display: "3" },
       { name: 'row-2-column-1 (1)', img: 'assets/row-2-column-1 (1).png', payouts: [0, 3, 6], chance: 0.06, display: "4" },
-      // Numbers 5-9 (5,6,7,8,9)
       { name: 'row-2-column-2 (1)', img: 'assets/row-2-column-2 (1).png', payouts: [0, 1, 2], chance: 0.15, display: "5" },
       { name: 'row-2-column-3 (1)', img: 'assets/row-2-column-3 (1).png', payouts: [0, 1, 2], chance: 0.15, display: "6" },
       { name: 'row-3-column-1 (1)', img: 'assets/row-3-column-1 (1).png', payouts: [0, 1, 2], chance: 0.15, display: "7" },
@@ -104,22 +89,25 @@
       { name: 'row-3-column-3 (1)', img: 'assets/row-3-column-3 (1).png', payouts: [0, 1, 2], chance: 0.15, display: "9" }
     ];
 
-    // --- Define All 10 Paylines ---
+    // --- Define 5 Paylines ---
     const paylines = [
       [ [0,0], [1,0], [2,0] ], // Top row
       [ [0,1], [1,1], [2,1] ], // Middle row
       [ [0,2], [1,2], [2,2] ], // Bottom row
       [ [0,0], [1,1], [2,2] ], // Diagonal TL-BR
-      [ [0,2], [1,1], [2,0] ], // Diagonal BL-TR
-      [ [0,0], [1,1], [2,0] ], // V shape (top)
-      [ [0,2], [1,1], [2,2] ], // Inverted V (bottom)
-      [ [0,0], [1,0], [2,1] ], // Zigzag top
-      [ [0,2], [1,2], [2,1] ], // Zigzag bottom
-      [ [0,1], [1,0], [2,1] ]  // Center-cross
+      [ [0,2], [1,1], [2,0] ]  // Diagonal BL-TR
+    ];
+
+    // --- Payline Colors ---
+    const paylineColors = [
+      "#e53935", // Red
+      "#1e88e5", // Blue
+      "#43a047", // Green
+      "#fb8c00", // Orange
+      "#8e24aa"  // Purple
     ];
 
     // --- PROBABILITY REEL GENERATION ---
-    // Returns a random symbol index according to its chance
     function getRandomSymbolIndex() {
       const r = Math.random();
       let acc = 0;
@@ -127,12 +115,11 @@
         acc += symbols[i].chance;
         if (r < acc) return i;
       }
-      // fallback in case of floating point
       return symbols.length - 1;
     }
 
     const reelsCount = 3, visibleRows = 3;
-    // Each reel will just pick random symbols, as all reels use the same distribution
+
     function getRandomGrid() {
       const grid = [];
       for (let reel = 0; reel < reelsCount; reel++) {
@@ -156,7 +143,7 @@
     const paylinesSelect = document.createElement('select');
     paylinesSelect.className = "paylines-ui";
     paylinesSelect.id = "paylinesAmount";
-    for (let i = 1; i <= 5; i++) { // Only 1-5 options now
+    for (let i = 1; i <= 5; i++) {
       paylinesSelect.innerHTML += `<option value="${i}">${i} Payline${i > 1 ? "s" : ""}</option>`;
     }
     document.querySelector('.bottom-ui').insertBefore(paylinesSelect, betSelect.nextSibling);
@@ -175,18 +162,56 @@
       setTimeout(() => winMsgEl.classList.remove("show"), 2500);
     }
 
+    // --- SVG Paylines Overlay ---
+    // Reel/row cell positions for SVG drawing
+    const cellPositions = [
+      // X positions of reels
+      [60, 132, 204],
+      // Y positions of rows
+      [36, 108, 180]
+    ];
+
+    function getCellCenter(reel, row) {
+      return {
+        x: cellPositions[0][reel],
+        y: cellPositions[1][row]
+      };
+    }
+
+    function renderPaylinesSVG(activeCount, state = "faint", winningIndices = []) {
+      // state: "faint" | "bright" | "result"
+      const svg = document.getElementById('paylinesSVG');
+      svg.innerHTML = '';
+      for (let i = 0; i < paylines.length; i++) {
+        if (i >= activeCount) continue;
+        const color = paylineColors[i];
+        let alpha = 0.33;
+        let strokeWidth = 4;
+        if (state === "bright" || (state === "result" && winningIndices.includes(i))) {
+          alpha = 1.0;
+          strokeWidth = 7;
+        }
+        else if (state === "result") {
+          alpha = 0.33;
+          strokeWidth = 4;
+        }
+        // Draw polyline
+        const pts = paylines[i].map(([reel, row]) => getCellCenter(reel, row));
+        const pointsStr = pts.map(pt => `${pt.x},${pt.y}`).join(' ');
+        svg.innerHTML += `<polyline points="${pointsStr}" 
+          style="fill:none;stroke:${color};stroke-width:${strokeWidth};stroke-linecap:round;stroke-linejoin:round;stroke-opacity:${alpha};" />`;
+      }
+    }
+
     // --- SLOT MECHANICS ---
-    // For animation, mock a "spin" by showing random symbols and then the grid
     function spinReel(reelIdx, finalSymbols, duration = 1400, delay = 0) {
       return new Promise(resolve => {
         const stripDiv = document.querySelector(`#reel${reelIdx} .reel-strip`);
         let html = '';
-        // Animate: Show random symbols during spin
         for (let i = 0; i < visibleRows * 5; i++) {
           const idx = getRandomSymbolIndex();
           html += `<div class="sprite"><img src="${symbols[idx].img}" alt=""></div>`;
         }
-        // Add final symbols at end
         for (let i = 0; i < visibleRows; i++) {
           html += `<div class="sprite"><img src="${symbols[finalSymbols[i]].img}" alt=""></div>`;
         }
@@ -201,7 +226,6 @@
           stripDiv.style.top = finalTop + "px";
         }, delay);
         setTimeout(() => {
-          // Set final symbols
           let html = '';
           for (let i = 0; i < visibleRows; i++) {
             html += `<div class="sprite"><img src="${symbols[finalSymbols[i]].img}" alt=""></div>`;
@@ -233,30 +257,29 @@
       let winLines = [];
       for (let i = 0; i < activePaylines; i++) {
         const line = paylines[i];
-        // Collect symbols along the payline
         const s0 = grid[line[0][0]][line[0][1]];
         const s1 = grid[line[1][0]][line[1][1]];
         const s2 = grid[line[2][0]][line[2][1]];
-        // Check for 3 in a row
+        // 3 in a row
         if (s0 === s1 && s1 === s2) {
           const payout = symbols[s0].payouts[2] * bet;
           totalWin += payout;
-          winLines.push({ payline: i+1, symbol: symbols[s0].display, payout });
+          winLines.push({ payline: i, symbol: symbols[s0].display, payout, cells: line });
           continue;
         }
-        // Check for 2 consecutive matches (1-2), (2-3), (1-3)
+        // 2 consecutive matches
         if (s0 === s1) {
           const payout = symbols[s0].payouts[1] * bet;
           if (payout > 0) {
             totalWin += payout;
-            winLines.push({ payline: i+1, symbol: symbols[s0].display, payout });
+            winLines.push({ payline: i, symbol: symbols[s0].display, payout, cells: [[line[0][0], line[0][1]], [line[1][0], line[1][1]]] });
           }
         }
         if (s1 === s2 && s1 !== s0) {
           const payout = symbols[s1].payouts[1] * bet;
           if (payout > 0) {
             totalWin += payout;
-            winLines.push({ payline: i+1, symbol: symbols[s1].display, payout });
+            winLines.push({ payline: i, symbol: symbols[s1].display, payout, cells: [[line[1][0], line[1][1]], [line[2][0], line[2][1]]] });
           }
         }
       }
@@ -286,11 +309,45 @@
     }
     renderPayoutTable();
 
+    // --- SYMBOL HIGHLIGHTING ---
+    function highlightWinningSymbols(winLines, grid) {
+      // Remove all previous highlights
+      for (let reel = 0; reel < reelsCount; reel++) {
+        const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+        const sprites = stripDiv.querySelectorAll('.sprite');
+        sprites.forEach(sprite => sprite.classList.remove('gold-highlight'));
+      }
+      // Add new highlights
+      winLines.forEach(wl => {
+        if (wl.cells.length === 3) {
+          wl.cells.forEach(([reel, row]) => {
+            const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+            const sprite = stripDiv.children[row];
+            if (sprite) sprite.classList.add('gold-highlight');
+          });
+        } else if (wl.cells.length === 2) {
+          wl.cells.forEach(([reel, row]) => {
+            const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+            const sprite = stripDiv.children[row];
+            if (sprite) sprite.classList.add('gold-highlight');
+          });
+        }
+      });
+    }
+
+    function clearWinningHighlights() {
+      for (let reel = 0; reel < reelsCount; reel++) {
+        const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
+        const sprites = stripDiv.querySelectorAll('.sprite');
+        sprites.forEach(sprite => sprite.classList.remove('gold-highlight'));
+      }
+    }
+
     // --- SPIN BUTTON LOGIC ---
     const spinBtn = document.getElementById('spinBtn');
     spinBtn.onclick = async function() {
       const bet = parseFloat(betSelect.value);
-      const paylinesCount = parseInt(document.getElementById('paylinesAmount').value, 10);
+      const activePaylines = parseInt(document.getElementById('paylinesAmount').value, 10);
       if (balance < bet) {
         showWinMsg("Insufficient balance!");
         return;
@@ -299,6 +356,10 @@
       spinBtn.disabled = true;
       betSelect.disabled = true;
       paylinesSelect.disabled = true;
+
+      // Show bright lines for selected paylines while spinning, and clear highlights
+      renderPaylinesSVG(activePaylines, "bright");
+      clearWinningHighlights();
 
       // Generate grid for spin
       let grid = [];
@@ -315,7 +376,17 @@
         spinReel(2, [grid[2][0], grid[2][1], grid[2][2]], 1700, 240)
       ]);
 
-      const { totalWin, winLines } = evaluatePayout(grid, bet, paylinesCount);
+      const { totalWin, winLines } = evaluatePayout(grid, bet, activePaylines);
+
+      // Find which paylines won
+      const winningPaylineIndices = winLines.map(wl => wl.payline);
+
+      // Show result state lines: bright for winners, faint for rest
+      renderPaylinesSVG(activePaylines, "result", winningPaylineIndices);
+
+      // Highlight winning symbols
+      highlightWinningSymbols(winLines, grid);
+
       if (totalWin > 0) {
         setBalance(balance + totalWin);
         let msg = `You won $${totalWin.toFixed(2)}!`;
@@ -326,13 +397,32 @@
       } else {
         showWinMsg("No win. Try again!");
       }
+
       spinBtn.disabled = false;
       betSelect.disabled = false;
       paylinesSelect.disabled = false;
+
+      // Remove highlights after 2.5s
+      setTimeout(() => {
+        renderPaylinesSVG(activePaylines, "faint");
+        clearWinningHighlights();
+      }, 2500);
     };
 
-    // On load, show random grid
-    showGrid(getRandomGrid());
+    // On load, show random grid and SVG faint lines
+    function setupInitialUI() {
+      const grid = getRandomGrid();
+      showGrid(grid);
+      renderPaylinesSVG(parseInt(paylinesSelect.value, 10), "faint");
+      clearWinningHighlights();
+    }
+    setupInitialUI();
+
+    // On payline dropdown change, update faint lines
+    paylinesSelect.addEventListener('change', () => {
+      renderPaylinesSVG(parseInt(paylinesSelect.value, 10), "faint");
+      clearWinningHighlights();
+    });
   </script>
 </body>
 </html>
