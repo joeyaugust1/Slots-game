@@ -6,6 +6,8 @@
   <style>
     body { background: #181f11; min-height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: 'Segoe UI', Arial, sans-serif; }
     .slots-bg { position: relative; width: 500px; height: 750px; background: url('assets/file_0000000046b0622f8246d2c2294dc6f8.png') no-repeat center center; background-size: contain; box-shadow: 0 6px 40px #011a, 0 1px 15px #000a inset; margin-top: 40px; }
+    /* Payline SVG now has z-index: 1, reels-area is z-index: 2 so symbols are above lines */
+    .paylines-svg { pointer-events: none; position: absolute; left: 52px; top: 315px; width: 395px; height: 215px; z-index: 1; }
     .reels-area { position: absolute; left: 52px; top: 315px; width: 395px; height: 215px; display: flex; justify-content: space-between; z-index: 2; pointer-events: none; }
     .reel-column { width: 120px; height: 215px; overflow: hidden; position: relative; display: flex; flex-direction: column; align-items: center; background: none; }
     .reel-strip { position: absolute; top: 0; left: 0; width: 120px; transition: top 0.25s cubic-bezier(.22,1.5,.6,1); }
@@ -37,20 +39,17 @@
     .payout-table-row img { width: 48px; height: 48px; object-fit: contain; margin-right: 12px; border-radius: 6px; border: 1px solid #fff3; background: #181f11; }
     .payout-table-row .symbol-name { min-width: 110px; }
     .payout-table-row .symbol-payout { color: #ffed6b; font-weight: 600; margin-left: auto; }
-    /* SVG overlay styles */
-    .paylines-svg { pointer-events: none; position: absolute; left: 52px; top: 315px; width: 395px; height: 215px; z-index: 5; }
   </style>
 </head>
 <body>
   <div class="slots-bg">
+    <svg class="paylines-svg" id="paylinesSVG" width="395" height="215"></svg>
     <div class="win-msg" id="winMsg"></div>
     <div class="reels-area" id="reelsArea">
       <div class="reel-column" id="reel0"><div class="reel-strip"></div></div>
       <div class="reel-column" id="reel1"><div class="reel-strip"></div></div>
       <div class="reel-column" id="reel2"><div class="reel-strip"></div></div>
     </div>
-    <!-- SVG Paylines Overlay -->
-    <svg class="paylines-svg" id="paylinesSVG" width="395" height="215"></svg>
     <div class="bottom-ui">
       <div class="balance-ui" id="balance">Balance: $10.00</div>
       <select class="bet-ui" id="betAmount"></select>
@@ -163,23 +162,18 @@
     }
 
     // --- SVG Paylines Overlay ---
-    // Reel/row cell positions for SVG drawing
-    const cellPositions = [
-      // X positions of reels
-      [60, 132, 204],
-      // Y positions of rows
-      [36, 108, 180]
-    ];
-
+    // Calculate the center pixel positions for each reel and row (3x3 grid)
+    // The reels-area is 395px wide, 3 columns, so each column is 395/3 ≈ 131.67px
+    // Each symbol is 72px high, 3 rows, so each row starts at 0, 72, 144
+    // But reels-area height is 215px, so vertical centering is needed.
+    // Center of symbol: x = reel * 395/3 + 395/6, y = row * 72 + 36
     function getCellCenter(reel, row) {
-      return {
-        x: cellPositions[0][reel],
-        y: cellPositions[1][row]
-      };
+      const x = (reel * (395/3)) + (395/6); // column: 65.83, 197.5, 329.17
+      const y = row * 72 + 36; // row: 36, 108, 180
+      return { x, y };
     }
 
     function renderPaylinesSVG(activeCount, state = "faint", winningIndices = []) {
-      // state: "faint" | "bright" | "result"
       const svg = document.getElementById('paylinesSVG');
       svg.innerHTML = '';
       for (let i = 0; i < paylines.length; i++) {
@@ -311,13 +305,11 @@
 
     // --- SYMBOL HIGHLIGHTING ---
     function highlightWinningSymbols(winLines, grid) {
-      // Remove all previous highlights
       for (let reel = 0; reel < reelsCount; reel++) {
         const stripDiv = document.querySelector(`#reel${reel} .reel-strip`);
         const sprites = stripDiv.querySelectorAll('.sprite');
         sprites.forEach(sprite => sprite.classList.remove('gold-highlight'));
       }
-      // Add new highlights
       winLines.forEach(wl => {
         if (wl.cells.length === 3) {
           wl.cells.forEach(([reel, row]) => {
@@ -357,11 +349,9 @@
       betSelect.disabled = true;
       paylinesSelect.disabled = true;
 
-      // Show bright lines for selected paylines while spinning, and clear highlights
       renderPaylinesSVG(activePaylines, "bright");
       clearWinningHighlights();
 
-      // Generate grid for spin
       let grid = [];
       for (let reel = 0; reel < reelsCount; reel++) {
         grid[reel] = [];
@@ -369,7 +359,6 @@
           grid[reel][row] = getRandomSymbolIndex();
         }
       }
-      // Animate reels
       await Promise.all([
         spinReel(0, [grid[0][0], grid[0][1], grid[0][2]], 1200, 0),
         spinReel(1, [grid[1][0], grid[1][1], grid[1][2]], 1450, 120),
@@ -377,14 +366,8 @@
       ]);
 
       const { totalWin, winLines } = evaluatePayout(grid, bet, activePaylines);
-
-      // Find which paylines won
       const winningPaylineIndices = winLines.map(wl => wl.payline);
-
-      // Show result state lines: bright for winners, faint for rest
       renderPaylinesSVG(activePaylines, "result", winningPaylineIndices);
-
-      // Highlight winning symbols
       highlightWinningSymbols(winLines, grid);
 
       if (totalWin > 0) {
@@ -402,14 +385,12 @@
       betSelect.disabled = false;
       paylinesSelect.disabled = false;
 
-      // Remove highlights after 2.5s
       setTimeout(() => {
         renderPaylinesSVG(activePaylines, "faint");
         clearWinningHighlights();
       }, 2500);
     };
 
-    // On load, show random grid and SVG faint lines
     function setupInitialUI() {
       const grid = getRandomGrid();
       showGrid(grid);
@@ -418,7 +399,6 @@
     }
     setupInitialUI();
 
-    // On payline dropdown change, update faint lines
     paylinesSelect.addEventListener('change', () => {
       renderPaylinesSVG(parseInt(paylinesSelect.value, 10), "faint");
       clearWinningHighlights();
