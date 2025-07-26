@@ -156,7 +156,7 @@
     const paylinesSelect = document.createElement('select');
     paylinesSelect.className = "paylines-ui";
     paylinesSelect.id = "paylinesAmount";
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 5; i++) { // Only 1-5 options now
       paylinesSelect.innerHTML += `<option value="${i}">${i} Payline${i > 1 ? "s" : ""}</option>`;
     }
     document.querySelector('.bottom-ui').insertBefore(paylinesSelect, betSelect.nextSibling);
